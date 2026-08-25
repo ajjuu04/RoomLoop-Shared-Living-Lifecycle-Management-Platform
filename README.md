@@ -1,3 +1,15 @@
+# DOnt Forget thigs
+## Weite the Flyway migration after some time 
+
+
+
+
+
+
+
+
+
+
 ok so this we tell about tha wha we built and couuretly working 
 
 
