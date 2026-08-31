@@ -11,6 +11,14 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(
+    uniqueConstraints ={
+            @UniqueConstraint(
+                    name = "unique_user_status",
+                    columnNames = {"user_id", "membership_status('ACTIVE')"}
+            )
+    }
+)
 public class Membership {
 
     @Id

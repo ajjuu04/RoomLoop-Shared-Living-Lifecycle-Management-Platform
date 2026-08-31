@@ -1,9 +1,9 @@
-INSERT INTO `user` (mobile_number, name, email, password) VALUES
-('9876543210', 'Ajinkya Jadhav', 'ajinkya@gmail.com', 'password123'),
-('9876543211', 'Rahul Patil', 'rahul@gmail.com', 'password123'),
-('9876543212', 'Amit Sharma', 'amit@gmail.com', 'password123'),
-('9876543213', 'Rohit Kulkarni', 'rohit@gmail.com', 'password123'),
-('9876543214', 'Sanket Deshmukh', 'sanket@gmail.com', 'password123');
+INSERT INTO `app_user` (mobile_number, name, email, password) VALUES
+('9876543210', 'Ajinkya Jadhav', 'ajinkya@gmail.com', '$2a$10$DhXRXDqNsf8CH4t2zOEewe1lrZb6CNGKWFNTsYkdvUOwtNOOB1Sf.'),
+('9876543211', 'Rahul Patil', 'rahul@gmail.com', '$2a$10$DhXRXDqNsf8CH4t2zOEewe1lrZb6CNGKWFNTsYkdvUOwtNOOB1Sf.'),
+('9876543212', 'Amit Sharma', 'amit@gmail.com', '$2a$10$DhXRXDqNsf8CH4t2zOEewe1lrZb6CNGKWFNTsYkdvUOwtNOOB1Sf.'),
+('9876543213', 'Rohit Kulkarni', 'rohit@gmail.com', '$2a$10$DhXRXDqNsf8CH4t2zOEewe1lrZb6CNGKWFNTsYkdvUOwtNOOB1Sf.'),
+('9876543214', 'Sanket Deshmukh', 'sanket@gmail.com', '$2a$10$DhXRXDqNsf8CH4t2zOEewe1lrZb6CNGKWFNTsYkdvUOwtNOOB1Sf.');
 
 
 INSERT INTO room
