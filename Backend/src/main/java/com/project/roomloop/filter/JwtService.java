@@ -24,7 +24,7 @@
 
         public String generateAccessToken(User user){
             return Jwts.builder()
-                    .setSubject(user.getEmail())
+                    .setSubject(user.getId().toString())
                     .claim("userId",user.getId().toString())
                     .setIssuedAt(new Date())
                     .setExpiration(new Date(System.currentTimeMillis() + 1000*60*10))
@@ -32,14 +32,14 @@
                     .compact();
         }
 
-        public String getEmailFromToken(String jwtToken){
+        public Long getUserIdFromToken(String jwtToken){
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(getSecreteKey())
                     .build()
                     .parseClaimsJws(jwtToken)
                     .getBody();
 
-            return claims.getSubject();
+            return Long.valueOf(claims.getSubject());
         }
 
         public boolean isJwtValid(String jwtToken){

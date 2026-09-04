@@ -1,6 +1,7 @@
 package com.project.roomloop.filter;
 
 import com.project.roomloop.entity.User;
+import com.project.roomloop.helperMethod.HelperForRoomListing;
 import com.project.roomloop.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final HelperForRoomListing helperForRoomListing;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -41,10 +44,10 @@ public class JwtFilter extends OncePerRequestFilter {
         log.info("token is = "+token);
 
 
-        String email;
+        Long userId;
 
         try {
-            email = jwtService.getEmailFromToken(token);
+            userId = jwtService.getUserIdFromToken(token);
         }
         catch (JwtException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -52,9 +55,10 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            User user = userRepository.findByEmail(email).orElseThrow();
-            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            helperForRoomListing.checkUser(userId);      // this is extra remove this after responce token added
+            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+                    new UsernamePasswordAuthenticationToken(userId, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         }
 

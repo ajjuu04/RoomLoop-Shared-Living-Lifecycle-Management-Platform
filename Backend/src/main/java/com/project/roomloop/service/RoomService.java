@@ -9,6 +9,7 @@ import com.project.roomloop.entity.Room;
 import com.project.roomloop.entity.User;
 import com.project.roomloop.entity.types.MembershipStatus;
 import com.project.roomloop.error.ActiveMembershipException;
+import com.project.roomloop.helperMethod.HelperForRoomListing;
 import com.project.roomloop.helperMethod.RoomAccessGuide;
 import com.project.roomloop.repository.MembershipRepository;
 import com.project.roomloop.repository.RoomRepository;
@@ -17,9 +18,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -31,14 +30,23 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final ModelMapper modelMapper;
     private final RoomAccessGuide roomAccessGuide;
+    private final HelperForRoomListing helperForRoomListing;
+
 
     @Transactional
-    public RoomDetailsDto registerNewRoom(RegisterNewRoomRequest registerNewRoomRequest,User user) {
+    public RoomDetailsDto registerNewRoom(RegisterNewRoomRequest registerNewRoomRequest, Long userId) {
 
-        boolean isOtherRoomMember = membershipRepository.existsByUserAndMembershipStatus(user, MembershipStatus.ACTIVE);
+        User user = helperForRoomListing.checkUser(userId);
 
-        if(isOtherRoomMember){
-            throw new ActiveMembershipException("That user have alredy active in Another room, Exits from that room first");
+        boolean isOtherRoomMember =
+                membershipRepository.existsByUserAndMembershipStatus(
+                        user, MembershipStatus.ACTIVE
+                );
+
+        if (isOtherRoomMember) {
+            throw new ActiveMembershipException(
+                    "That user have alredy active in Another room, Exits from that room first"
+            );
         }
 
         Room room = Room.builder()
@@ -71,14 +79,20 @@ public class RoomService {
     }
 
 
-    public RoomDetailsDto getRoomDetails(User user) {
-        Membership membership = membershipRepository.findByUserAndMembershipStatus(user,MembershipStatus.ACTIVE).orElseThrow(() -> new ActiveMembershipException("This user Dont have Any Active Membership in any room, create Or Join Room"));
-//
-//        if (membership == null){
-//            throw new ActiveMembershipException("This user Dont have Any Membership in any room, create Or Join Room");
-//        }
+    public RoomDetailsDto getRoomDetails(Long userId) {
 
-        Room room  = membership.getRoom();
+        User user = helperForRoomListing.checkUser(userId);
+
+        Membership membership =
+                membershipRepository.findByUserAndMembershipStatus(
+                        user, MembershipStatus.ACTIVE
+                ).orElseThrow(() ->
+                        new ActiveMembershipException(
+                                "This user Dont have Any Active Membership in any room, create Or Join Room"
+                        )
+                );
+
+        Room room = membership.getRoom();
 
         return RoomDetailsDto.builder()
                 .id(room.getId())
@@ -90,14 +104,15 @@ public class RoomService {
                 .build();
     }
 
+
     public RoomDetailsDto getRoomDetailsById(Long id) {
-        Room room = roomRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("There in no any Room with this Id"));
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        if (!user.getEmail().equals("ajinkya@gmail.com")){
-            throw new AccessDeniedException("You sont have acceess to this api");
-        }
+        Room room = roomRepository.findById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "There in no any Room with this Id"
+                        )
+                );
 
         return RoomDetailsDto.builder()
                 .id(room.getId())
@@ -111,10 +126,22 @@ public class RoomService {
 
 
     @Transactional
-    public RoomDetailsDto editRoom(Long roomId, RoomUpdateDto roomUpdateDto, User user) {
-        Room room = roomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("room not Found with this Id"));
+    public RoomDetailsDto editRoom(
+            Long roomId,
+            RoomUpdateDto roomUpdateDto,
+            Long userId
+    ) {
 
-        roomAccessGuide.isUserAdmin(user,room);
+        User user = helperForRoomListing.checkUser(userId);
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "room not Found with this Id"
+                        )
+                );
+
+        roomAccessGuide.isUserAdmin(user, room);
 
         room.setAddress(roomUpdateDto.getAddress());
         room.setRent(roomUpdateDto.getRent());
@@ -123,24 +150,44 @@ public class RoomService {
         Room updatedRoom = roomRepository.save(room);
 
         return modelMapper.map(updatedRoom, RoomDetailsDto.class);
-
     }
 
 
     @Transactional
-    public RoomDetailsDto editRoomOccupancy(Long roomId, RoomOccupancyUpdateDto roomOccupancyUpdateDto, User user) {
-        Room room = roomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("room not Found with this Id"));
+    public RoomDetailsDto editRoomOccupancy(
+            Long roomId,
+            RoomOccupancyUpdateDto roomOccupancyUpdateDto,
+            Long userId
+    ) {
 
-        roomAccessGuide.isUserAdmin(user,room);
+        User user = helperForRoomListing.checkUser(userId);
 
-        long currentActiveMemberInRoom = membershipRepository.countByRoomAndMembershipStatus(room,MembershipStatus.ACTIVE);
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "room not Found with this Id"
+                        )
+                );
+
+        roomAccessGuide.isUserAdmin(user, room);
+
+        long currentActiveMemberInRoom =
+                membershipRepository.countByRoomAndMembershipStatus(
+                        room, MembershipStatus.ACTIVE
+                );
+
         log.info("currentActiveMemberInRoom is : " + currentActiveMemberInRoom);
-        long newTotalOccupancy = roomOccupancyUpdateDto.getTotalOccupancy();
+
+        long newTotalOccupancy =
+                roomOccupancyUpdateDto.getTotalOccupancy();
+
         log.info("newTotalOccupancy is : " + newTotalOccupancy);
 
-
-        if (newTotalOccupancy < currentActiveMemberInRoom){
-            throw new IllegalArgumentException("Cannot reduce the Occupency cause we fo that u have to remove old member first, current Occupency is : "+currentActiveMemberInRoom);
+        if (newTotalOccupancy < currentActiveMemberInRoom) {
+            throw new IllegalArgumentException(
+                    "Cannot reduce the Occupency cause we fo that u have to remove old member first, current Occupency is : "
+                            + currentActiveMemberInRoom
+            );
         }
 
         room.setTotalOccupancy(newTotalOccupancy);

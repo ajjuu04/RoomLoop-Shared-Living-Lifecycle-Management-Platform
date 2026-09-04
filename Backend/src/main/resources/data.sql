@@ -14,13 +14,15 @@ INSERT INTO room
 ('Viman Nagar, Pune', 20000.00, 40000.00, 3, 4),
 ('Hinjewadi, Pune', 16000.00, 32000.00, 2, 5);
 
+
 INSERT INTO listing
-(room_id, posted_by_id, open_spots, preferences, listing_status) VALUES
-(1, 2, 2, 'Non-smoker, working professional', 'OPEN'),
-(2, 3, 1, 'Vegetarian preferred, clean and quiet', 'OPEN'),
-(3, 1, 3, 'Students or working professionals', 'OPEN'),
-(4, 4, 2, 'No pets, preferably non-smoker', 'OPEN'),
-(5, 5, 1, 'Working professional, flexible timings', 'OPEN');
+(room_id, posted_by_id, open_spots, preferences, listing_status, listed_at, updated_at)
+VALUES
+    (1, 2, 2, 'Non-smoker, working professional', 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (2, 3, 1, 'Vegetarian preferred, clean and quiet', 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (3, 1, 3, 'Students or working professionals', 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (4, 4, 2, 'No pets, preferably non-smoker', 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (5, 5, 1, 'Working professional, flexible timings', 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO membership
 (user_id, room_id, is_admin, membership_status) VALUES

@@ -10,6 +10,7 @@ import com.project.roomloop.entity.Room;
 import com.project.roomloop.entity.User;
 import com.project.roomloop.entity.types.MembershipStatus;
 import com.project.roomloop.error.ActiveMembershipException;
+import com.project.roomloop.helperMethod.HelperForRoomListing;
 import com.project.roomloop.helperMethod.RoomAccessGuide;
 import com.project.roomloop.repository.MembershipRepository;
 import com.project.roomloop.repository.RoomRepository;
@@ -22,13 +23,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
-import org.springframework.security.access.AccessDeniedException;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,27 +46,31 @@ public class RoomServiceTest {
     private RoomAccessGuide roomAccessGuide;
 
     @Mock
+    private HelperForRoomListing helperForRoomListing;
+
+    @Mock
     private ModelMapper modelMapper;
 
     @InjectMocks
     private RoomService roomService;
 
+
     @Nested
     class registerNewRoom {
 
-        //all good path
         @Test
-        public void registerNewRoomIfUserNotActiveGoodPathTest(){
+        public void registerNewRoomIfUserNotActiveGoodPathTest() {
 
-            // Request come from frontend
             RegisterNewRoomRequest request = new RegisterNewRoomRequest();
             request.setAddress("nana Peth");
             request.setRent(new BigDecimal("12000"));
             request.setDeposit(new BigDecimal("24000"));
             request.setTotalOccupancy(4);
 
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -90,6 +91,9 @@ public class RoomServiceTest {
                     .membershipStatus(MembershipStatus.ACTIVE)
                     .build();
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
             when(membershipRepository.existsByUserAndMembershipStatus(
                     eq(user),
                     eq(MembershipStatus.ACTIVE)
@@ -101,13 +105,9 @@ public class RoomServiceTest {
             when(membershipRepository.save(any(Membership.class)))
                     .thenReturn(membership);
 
-
-            // Act
             RoomDetailsDto result =
-                    roomService.registerNewRoom(request, user);
+                    roomService.registerNewRoom(request, userId);
 
-
-            // Assert
             assertNotNull(result);
             assertEquals(10L, result.getId());
             assertEquals("nana Peth", result.getAddress());
@@ -118,53 +118,44 @@ public class RoomServiceTest {
         }
 
 
-
-        //if user have ohter active membership
         @Test
-        public void registerNewRoomIfUserIsActiveInAnotherRoomTest(){
+        public void registerNewRoomIfUserIsActiveInAnotherRoomTest() {
 
-            // Request come from frontend
             RegisterNewRoomRequest request = new RegisterNewRoomRequest();
             request.setAddress("nana Peth");
             request.setRent(new BigDecimal("12000"));
             request.setDeposit(new BigDecimal("24000"));
             request.setTotalOccupancy(4);
 
+            Long userId = 1L;
 
-//            Arrange data
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
-            //mock
             when(membershipRepository.existsByUserAndMembershipStatus(
                     eq(user),
                     eq(MembershipStatus.ACTIVE)
             )).thenReturn(true);
 
-
-            // calling Method
             assertThrows(
                     ActiveMembershipException.class,
-                    () -> roomService.registerNewRoom(request, user)
+                    () -> roomService.registerNewRoom(request, userId)
             );
 
-
-            // return Assert
             verify(roomRepository, never()).save(any(Room.class));
             verify(membershipRepository, never()).save(any(Membership.class));
         }
 
 
-
-        // AI test cases
         @Test
         public void registerNewRoom_ShouldCreateCorrectRoom() {
 
-            // Arrange
             RegisterNewRoomRequest request = new RegisterNewRoomRequest();
 
             request.setAddress("nana Peth");
@@ -172,8 +163,10 @@ public class RoomServiceTest {
             request.setDeposit(new BigDecimal("24000"));
             request.setTotalOccupancy(4);
 
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -186,6 +179,9 @@ public class RoomServiceTest {
                     .totalOccupancy(4)
                     .cretedBy(user)
                     .build();
+
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(membershipRepository.existsByUserAndMembershipStatus(
                     eq(user),
@@ -205,11 +201,9 @@ public class RoomServiceTest {
                                     .build()
                     );
 
-            // Act
             RoomDetailsDto result =
-                    roomService.registerNewRoom(request, user);
+                    roomService.registerNewRoom(request, userId);
 
-            // Assert - returned DTO
             assertNotNull(result);
             assertEquals(10L, result.getId());
             assertEquals("nana Peth", result.getAddress());
@@ -218,7 +212,6 @@ public class RoomServiceTest {
             assertEquals(4, result.getTotalOccupancy());
             assertEquals(1L, result.getCretedByUser());
 
-            // Assert - Room was created correctly
             verify(roomRepository).save(argThat(room ->
                     room.getAddress().equals("nana Peth")
                             && room.getRent().compareTo(new BigDecimal("12000")) == 0
@@ -232,7 +225,6 @@ public class RoomServiceTest {
         @Test
         public void registerNewRoom_ShouldCreateCorrectMembership() {
 
-            // Arrange
             RegisterNewRoomRequest request = new RegisterNewRoomRequest();
 
             request.setAddress("nana Peth");
@@ -240,8 +232,10 @@ public class RoomServiceTest {
             request.setDeposit(new BigDecimal("24000"));
             request.setTotalOccupancy(4);
 
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -254,6 +248,9 @@ public class RoomServiceTest {
                     .totalOccupancy(4)
                     .cretedBy(user)
                     .build();
+
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(membershipRepository.existsByUserAndMembershipStatus(
                     eq(user),
@@ -273,11 +270,9 @@ public class RoomServiceTest {
                                     .build()
                     );
 
-            // Act
             RoomDetailsDto result =
-                    roomService.registerNewRoom(request, user);
+                    roomService.registerNewRoom(request, userId);
 
-            // Assert - returned DTO
             assertNotNull(result);
             assertEquals(10L, result.getId());
             assertEquals("nana Peth", result.getAddress());
@@ -286,7 +281,6 @@ public class RoomServiceTest {
             assertEquals(4, result.getTotalOccupancy());
             assertEquals(1L, result.getCretedByUser());
 
-            // Assert - Membership was created correctly
             verify(membershipRepository).save(argThat(membership ->
                     membership.getUser().equals(user)
                             && membership.getRoom().equals(savedRoom)
@@ -299,7 +293,6 @@ public class RoomServiceTest {
         @Test
         public void registerNewRoom_ShouldThrowException_WhenRoomSaveFails() {
 
-            // Arrange
             RegisterNewRoomRequest request = new RegisterNewRoomRequest();
 
             request.setAddress("nana Peth");
@@ -307,11 +300,16 @@ public class RoomServiceTest {
             request.setDeposit(new BigDecimal("24000"));
             request.setTotalOccupancy(4);
 
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
+
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(membershipRepository.existsByUserAndMembershipStatus(
                     eq(user),
@@ -321,25 +319,27 @@ public class RoomServiceTest {
             when(roomRepository.save(any(Room.class)))
                     .thenThrow(new RuntimeException("Database error"));
 
-            // Act + Assert
             assertThrows(
                     RuntimeException.class,
-                    () -> roomService.registerNewRoom(request, user)
+                    () -> roomService.registerNewRoom(request, userId)
             );
 
-            // Verify membership was never created
             verify(membershipRepository, never())
                     .save(any(Membership.class));
         }
+    }
+
 
     @Nested
-    class getRoomDetails{
-        @Test // happy path test case
+    class getRoomDetails {
+
+        @Test
         public void getRoomDetails_ShouldReturnRoomDetails() {
 
-            // Arange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -360,17 +360,17 @@ public class RoomServiceTest {
                     .membershipStatus(MembershipStatus.ACTIVE)
                     .build();
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
             when(membershipRepository.findByUserAndMembershipStatus(
                     eq(user),
                     eq(MembershipStatus.ACTIVE)
             )).thenReturn(Optional.of(membership));
 
+            RoomDetailsDto result =
+                    roomService.getRoomDetails(userId);
 
-            // calling method
-            RoomDetailsDto result = roomService.getRoomDetails(user);
-
-
-            // Assert
             assertEquals(10L, result.getId());
             assertEquals("Nana Peth", result.getAddress());
             assertEquals(new BigDecimal("12000"), result.getRent());
@@ -380,92 +380,92 @@ public class RoomServiceTest {
         }
 
 
+        @Test
+        public void getRoomDetails_ShouldThrowException_WhenUserHasNoActiveMembership() {
 
-    @Test // ai : user has no active membership
-    public void getRoomDetails_ShouldThrowException_WhenUserHasNoActiveMembership() {
+            Long userId = 1L;
 
-        // Arrange
-        User user = User.builder()
-                .id(1L)
-                .name("Ajinkya")
-                .email("ajinkya@gmail.com")
-                .build();
+            User user = User.builder()
+                    .id(userId)
+                    .name("Ajinkya")
+                    .email("ajinkya@gmail.com")
+                    .build();
 
-        when(membershipRepository.findByUserAndMembershipStatus(
-                eq(user),
-                eq(MembershipStatus.ACTIVE)
-        )).thenReturn(Optional.empty());
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
+            when(membershipRepository.findByUserAndMembershipStatus(
+                    eq(user),
+                    eq(MembershipStatus.ACTIVE)
+            )).thenReturn(Optional.empty());
 
-        // Act + Assert
-        assertThrows(
-                ActiveMembershipException.class,
-                () -> roomService.getRoomDetails(user)
-        );
-    }
-
-
-    @Test //ai Verify repository was called correctly Happy Path
-    public void getRoomDetails_ShouldReturnRoomDetailsVarifyRepo() {
-
-        // Arrange
-        User user = User.builder()
-                .id(1L)
-                .name("Ajinkya")
-                .email("ajinkya@gmail.com")
-                .build();
-
-        Room room = Room.builder()
-                .id(10L)
-                .address("Nana Peth")
-                .rent(new BigDecimal("12000"))
-                .deposit(new BigDecimal("24000"))
-                .totalOccupancy(4)
-                .cretedBy(user)
-                .build();
-
-        Membership membership = Membership.builder()
-                .user(user)
-                .room(room)
-                .isAdmin(true)
-                .membershipStatus(MembershipStatus.ACTIVE)
-                .build();
-
-        when(membershipRepository.findByUserAndMembershipStatus(
-                eq(user),
-                eq(MembershipStatus.ACTIVE)
-        )).thenReturn(Optional.of(membership));
+            assertThrows(
+                    ActiveMembershipException.class,
+                    () -> roomService.getRoomDetails(userId)
+            );
+        }
 
 
-        // Act
-        RoomDetailsDto result =
-                roomService.getRoomDetails(user);
+        @Test
+        public void getRoomDetails_ShouldReturnRoomDetailsVarifyRepo() {
 
+            Long userId = 1L;
 
-        // Assert
-        assertEquals(10L, result.getId());
-        assertEquals("Nana Peth", result.getAddress());
-        assertEquals(new BigDecimal("12000"), result.getRent());
-        assertEquals(new BigDecimal("24000"), result.getDeposit());
-        assertEquals(4, result.getTotalOccupancy());
-        assertEquals(1L, result.getCretedByUser());
+            User user = User.builder()
+                    .id(userId)
+                    .name("Ajinkya")
+                    .email("ajinkya@gmail.com")
+                    .build();
 
-        verify(membershipRepository)
-                .findByUserAndMembershipStatus(
-                        user,
-                        MembershipStatus.ACTIVE
-                );
-    }
+            Room room = Room.builder()
+                    .id(10L)
+                    .address("Nana Peth")
+                    .rent(new BigDecimal("12000"))
+                    .deposit(new BigDecimal("24000"))
+                    .totalOccupancy(4)
+                    .cretedBy(user)
+                    .build();
+
+            Membership membership = Membership.builder()
+                    .user(user)
+                    .room(room)
+                    .isAdmin(true)
+                    .membershipStatus(MembershipStatus.ACTIVE)
+                    .build();
+
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
+            when(membershipRepository.findByUserAndMembershipStatus(
+                    eq(user),
+                    eq(MembershipStatus.ACTIVE)
+            )).thenReturn(Optional.of(membership));
+
+            RoomDetailsDto result =
+                    roomService.getRoomDetails(userId);
+
+            assertEquals(10L, result.getId());
+            assertEquals("Nana Peth", result.getAddress());
+            assertEquals(new BigDecimal("12000"), result.getRent());
+            assertEquals(new BigDecimal("24000"), result.getDeposit());
+            assertEquals(4, result.getTotalOccupancy());
+            assertEquals(1L, result.getCretedByUser());
+
+            verify(membershipRepository)
+                    .findByUserAndMembershipStatus(
+                            user,
+                            MembershipStatus.ACTIVE
+                    );
+        }
     }
 
 
     @Nested
-    class getRoomDetailsById{
+    class getRoomDetailsById {
 
-        @Test // happy path test
+        @Test
         public void getRoomDetailsById_ShouldReturnRoomDetails() {
 
-            // Arrange
             User user = User.builder()
                     .id(1L)
                     .name("Ajinkya")
@@ -484,46 +484,24 @@ public class RoomServiceTest {
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
 
-
-            // Mocking
-            Authentication authentication = mock(Authentication.class);
-            SecurityContext securityContext = mock(SecurityContext.class);
-
-            when(securityContext.getAuthentication())
-                    .thenReturn(authentication);
-
-            when(authentication.getPrincipal())
-                    .thenReturn(user);
-
-            SecurityContextHolder.setContext(securityContext);
-
-
-            // calling methods
             RoomDetailsDto result =
                     roomService.getRoomDetailsById(10L);
 
-
-            // Assert
             assertEquals(10L, result.getId());
             assertEquals("Nana Peth", result.getAddress());
             assertEquals(new BigDecimal("12000"), result.getRent());
             assertEquals(new BigDecimal("24000"), result.getDeposit());
             assertEquals(4, result.getTotalOccupancy());
             assertEquals(1L, result.getCretedByUser());
-
-
-            // Cleanup
-            SecurityContextHolder.clearContext();
         }
 
-        @Test // Ai : Room doesn't exist
+
+        @Test
         public void getRoomDetailsById_ShouldThrowException_WhenRoomNotFound() {
 
-            // Arrange
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.empty());
 
-            // Act + Assert
             assertThrows(
                     EntityNotFoundException.class,
                     () -> roomService.getRoomDetailsById(10L)
@@ -533,111 +511,19 @@ public class RoomServiceTest {
         }
 
 
-        @Test // User is not authorized this is for the idf the user is the SuperAdmin ajinkya@g,mail.com
-        public void getRoomDetailsById_ShouldThrowException_WhenUserNotAuthorized() {
-
-            // Arrange
-            User user = User.builder()
-                    .id(2L)
-                    .name("Rahul")
-                    .email("rahul@gmail.com")
-                    .build();
-
-            Room room = Room.builder()
-                    .id(10L)
-                    .address("Nana Peth")
-                    .rent(new BigDecimal("12000"))
-                    .deposit(new BigDecimal("24000"))
-                    .totalOccupancy(4)
-                    .cretedBy(user)
-                    .build();
-
-            when(roomRepository.findById(10L))
-                    .thenReturn(Optional.of(room));
-
-
-            Authentication authentication =
-                    mock(Authentication.class);
-
-            SecurityContext securityContext =
-                    mock(SecurityContext.class);
-
-            when(securityContext.getAuthentication())
-                    .thenReturn(authentication);
-
-            when(authentication.getPrincipal())
-                    .thenReturn(user);
-
-            SecurityContextHolder.setContext(securityContext);
-
-
-            // Act + Assert
-            assertThrows(
-                    AccessDeniedException.class,
-                    () -> roomService.getRoomDetailsById(10L)
-            );
-
-
-            // Cleanup
-            SecurityContextHolder.clearContext();
-        }
-
-
-        @Test // Ai : SecurityContext doesn't contain a user
-        public void getRoomDetailsById_ShouldThrowException_WhenUserNotAuthenticated() {
-
-            // Arrange
-            User user = User.builder()
-                    .id(1L)
-                    .name("Ajinkya")
-                    .email("ajinkya@gmail.com")
-                    .build();
-
-            Room room = Room.builder()
-                    .id(10L)
-                    .address("Nana Peth")
-                    .rent(new BigDecimal("12000"))
-                    .deposit(new BigDecimal("24000"))
-                    .totalOccupancy(4)
-                    .cretedBy(user)
-                    .build();
-
-            when(roomRepository.findById(10L))
-                    .thenReturn(Optional.of(room));
-
-            SecurityContext securityContext =
-                    mock(SecurityContext.class);
-
-            when(securityContext.getAuthentication())
-                    .thenReturn(null);
-
-            SecurityContextHolder.setContext(securityContext);
-
-
-            // Act + Assert
-            assertThrows(
-                    NullPointerException.class,
-                    () -> roomService.getRoomDetailsById(10L)
-            );
-
-
-            // Cleanup
-            SecurityContextHolder.clearContext();
-        }
-
     }
 
 
-
     @Nested
-    class editRoomDetails{
+    class editRoomDetails {
 
         @Test
         public void editRoom_ShouldUpdateRoomAndReturnDto() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -665,6 +551,8 @@ public class RoomServiceTest {
                     .cretedByUser(1L)
                     .build();
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
@@ -675,13 +563,9 @@ public class RoomServiceTest {
             when(modelMapper.map(room, RoomDetailsDto.class))
                     .thenReturn(expectedDto);
 
-
-            // Act
             RoomDetailsDto result =
-                    roomService.editRoom(10L, request, user);
+                    roomService.editRoom(10L, request, userId);
 
-
-            // Assert
             assertEquals(10L, result.getId());
             assertEquals("Kothrud, Pune", result.getAddress());
             assertEquals(new BigDecimal("40000"), result.getRent());
@@ -695,13 +579,13 @@ public class RoomServiceTest {
         }
 
 
-
-        @Test // Ai : room not Found
+        @Test
         public void editRoom_ShouldThrowException_WhenRoomNotFound() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -711,18 +595,17 @@ public class RoomServiceTest {
             request.setRent(new BigDecimal("40000"));
             request.setDeposit(new BigDecimal("80000"));
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.empty());
 
-
-            // Act + Assert
             assertThrows(
                     EntityNotFoundException.class,
-                    () -> roomService.editRoom(10L, request, user)
+                    () -> roomService.editRoom(10L, request, userId)
             );
 
-
-            // Verify nothing was saved
             verify(roomRepository, never())
                     .save(any(Room.class));
 
@@ -731,12 +614,13 @@ public class RoomServiceTest {
         }
 
 
-        @Test // Ai : User is NOt Admin
+        @Test
         public void editRoom_ShouldThrowException_WhenUserIsNotAdmin() {
 
-            // Arrange
+            Long userId = 2L;
+
             User user = User.builder()
-                    .id(2L)
+                    .id(userId)
                     .name("Rahul")
                     .email("rahul@gmail.com")
                     .build();
@@ -755,6 +639,9 @@ public class RoomServiceTest {
             request.setRent(new BigDecimal("40000"));
             request.setDeposit(new BigDecimal("80000"));
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
 
@@ -763,26 +650,23 @@ public class RoomServiceTest {
             )).when(roomAccessGuide)
                     .isUserAdmin(user, room);
 
-
-            // Act + Assert
             assertThrows(
                     AccessDeniedException.class,
-                    () -> roomService.editRoom(10L, request, user)
+                    () -> roomService.editRoom(10L, request, userId)
             );
 
-
-            // Verify room was NOT saved
             verify(roomRepository, never())
                     .save(any(Room.class));
         }
 
 
-        @Test // Ai : room save fails
+        @Test
         public void editRoom_ShouldThrowException_WhenRoomSaveFails() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -801,6 +685,9 @@ public class RoomServiceTest {
             request.setRent(new BigDecimal("40000"));
             request.setDeposit(new BigDecimal("80000"));
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
 
@@ -810,33 +697,26 @@ public class RoomServiceTest {
             when(roomRepository.save(any(Room.class)))
                     .thenThrow(new RuntimeException("Database error"));
 
-
-            // Act
             RuntimeException exception = assertThrows(
                     RuntimeException.class,
-                    () -> roomService.editRoom(10L, request, user)
+                    () -> roomService.editRoom(10L, request, userId)
             );
 
-
-            // Assert
             assertEquals("Database error", exception.getMessage());
         }
-
-
     }
 
 
-
-
     @Nested
-    class editRoomOccupancy{
+    class editRoomOccupancy {
 
-        @Test  // happy path test
+        @Test
         public void editRoomOccupancy_ShouldUpdateOccupancyAndReturnDto() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -855,6 +735,8 @@ public class RoomServiceTest {
 
             request.setTotalOccupancy(5);
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
@@ -867,17 +749,13 @@ public class RoomServiceTest {
             when(roomRepository.save(any(Room.class)))
                     .thenReturn(room);
 
-
-            // calling method
             RoomDetailsDto result =
                     roomService.editRoomOccupancy(
                             10L,
                             request,
-                            user
+                            userId
                     );
 
-
-            // Assert
             assertEquals(10L, result.getId());
             assertEquals("Nana Peth", result.getAddress());
             assertEquals(new BigDecimal("12000"), result.getRent());
@@ -900,13 +778,13 @@ public class RoomServiceTest {
         }
 
 
-
-        @Test // ai : if Room doesn't exist
+        @Test
         public void editRoomOccupancy_ShouldThrowException_WhenRoomNotFound() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -916,22 +794,21 @@ public class RoomServiceTest {
 
             request.setTotalOccupancy(5);
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
+
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.empty());
 
-
-            // Act + Assert
             assertThrows(
                     EntityNotFoundException.class,
                     () -> roomService.editRoomOccupancy(
                             10L,
                             request,
-                            user
+                            userId
                     )
             );
 
-
-            // Verify
             verify(roomRepository).findById(10L);
 
             verify(roomRepository, never())
@@ -945,12 +822,13 @@ public class RoomServiceTest {
         }
 
 
-        @Test // ai : New occupancy is less than current members
+        @Test
         public void editRoomOccupancy_ShouldThrowException_WhenOccupancyLessThanActiveMembers() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Ajinkya")
                     .email("ajinkya@gmail.com")
                     .build();
@@ -969,6 +847,8 @@ public class RoomServiceTest {
 
             request.setTotalOccupancy(2);
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
@@ -978,19 +858,15 @@ public class RoomServiceTest {
                     MembershipStatus.ACTIVE
             )).thenReturn(4L);
 
-
-            // Act + Assert
             assertThrows(
                     IllegalArgumentException.class,
                     () -> roomService.editRoomOccupancy(
                             10L,
                             request,
-                            user
+                            userId
                     )
             );
 
-
-            // Verify
             verify(roomAccessGuide)
                     .isUserAdmin(user, room);
 
@@ -1005,12 +881,13 @@ public class RoomServiceTest {
         }
 
 
-        @Test // Ai : logi user is not admin just  a member
+        @Test
         public void editRoomOccupancy_ShouldThrowException_WhenUserIsNotAdmin() {
 
-            // Arrange
+            Long userId = 1L;
+
             User user = User.builder()
-                    .id(1L)
+                    .id(userId)
                     .name("Rahul")
                     .email("rahul@gmail.com")
                     .build();
@@ -1029,6 +906,8 @@ public class RoomServiceTest {
 
             request.setTotalOccupancy(5);
 
+            when(helperForRoomListing.checkUser(userId))
+                    .thenReturn(user);
 
             when(roomRepository.findById(10L))
                     .thenReturn(Optional.of(room));
@@ -1039,19 +918,15 @@ public class RoomServiceTest {
                     .when(roomAccessGuide)
                     .isUserAdmin(user, room);
 
-
-            // Act + Assert
             assertThrows(
                     AccessDeniedException.class,
                     () -> roomService.editRoomOccupancy(
                             10L,
                             request,
-                            user
+                            userId
                     )
             );
 
-
-            // Verify
             verify(roomAccessGuide)
                     .isUserAdmin(user, room);
 
@@ -1064,11 +939,5 @@ public class RoomServiceTest {
             verify(roomRepository, never())
                     .save(any(Room.class));
         }
-
-
     }
-
 }
-}
-
-

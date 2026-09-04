@@ -23,13 +23,13 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping("/create")  // add here @valid latter
-    public ResponseEntity<RoomDetailsDto> registerNewRoom(@RequestBody RegisterNewRoomRequest registerNewRoomRequest,@AuthenticationPrincipal User user){
-        return ResponseEntity.status(HttpStatus.CREATED).body(roomService.registerNewRoom(registerNewRoomRequest,user));
+    public ResponseEntity<RoomDetailsDto> registerNewRoom(@RequestBody RegisterNewRoomRequest registerNewRoomRequest,@AuthenticationPrincipal Long userId){
+        return ResponseEntity.status(HttpStatus.CREATED).body(roomService.registerNewRoom(registerNewRoomRequest,userId));
     }
 
     @GetMapping("/me")
-    public ResponseEntity<RoomDetailsDto> getRoomDetails(@AuthenticationPrincipal User user){
-        return ResponseEntity.ok(roomService.getRoomDetails(user));
+    public ResponseEntity<RoomDetailsDto> getRoomDetails(@AuthenticationPrincipal Long userId){
+        return ResponseEntity.ok(roomService.getRoomDetails(userId));
     }
 
     // no need extra
@@ -41,14 +41,14 @@ public class RoomController {
     @PatchMapping("/edit/{roomId}")
     public RoomDetailsDto editRoom(@PathVariable Long roomId,
                                    @RequestBody RoomUpdateDto roomUpdateDto,
-                                   @AuthenticationPrincipal User user){
-        return roomService.editRoom(roomId,roomUpdateDto,user);
+                                   @AuthenticationPrincipal Long userId){
+        return roomService.editRoom(roomId,roomUpdateDto,userId);
     }
 
     @PatchMapping("/edit/occupancy/{roomId}")
     public RoomDetailsDto editRoomOccupancy(@PathVariable Long roomId,
-                                                                    @RequestBody RoomOccupancyUpdateDto roomOccupancyUpdateDto,
-                                                                    @AuthenticationPrincipal User user){
-        return roomService.editRoomOccupancy(roomId,roomOccupancyUpdateDto,user);
+                                            @RequestBody RoomOccupancyUpdateDto roomOccupancyUpdateDto,
+                                            @AuthenticationPrincipal Long userId){
+        return roomService.editRoomOccupancy(roomId,roomOccupancyUpdateDto,userId);
     }
 }

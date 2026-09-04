@@ -13,6 +13,14 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(
+        uniqueConstraints = {
+             @UniqueConstraint(
+                     name = "unique_user_listing",
+                     columnNames = {"user_id","listing"}
+             )
+        }
+)
 public class Interested {
 
     @Id

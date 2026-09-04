@@ -3,6 +3,10 @@ package com.project.roomloop.entity;
 import com.project.roomloop.entity.types.ListingStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Setter
@@ -28,4 +32,10 @@ public class Listing {
 
     @Enumerated(EnumType.STRING)
     private ListingStatus listingStatus;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime ListedAt;
+    
+    private LocalDateTime updatedAt;
 }
