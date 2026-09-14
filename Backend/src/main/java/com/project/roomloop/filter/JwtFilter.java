@@ -57,10 +57,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             helperForRoomListing.checkUser(userId);      // this is extra remove this after responce token added
+            log.info("returnting to the checkUser filter layer ");
             UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                     new UsernamePasswordAuthenticationToken(userId, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         }
+
 
         filterChain.doFilter(request,response);
         return;

@@ -27,6 +27,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/room/**").authenticated()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/listing/**").authenticated()
+                        .requestMatchers("/membership/**").authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 //                .formLogin(Customizer.withDefaults());

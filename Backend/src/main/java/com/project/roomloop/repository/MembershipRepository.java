@@ -8,6 +8,7 @@ import com.project.roomloop.entity.types.MembershipStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long> {
@@ -22,6 +23,12 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
             MembershipStatus membershipStatus
     );
 
+    boolean existsByUserAndRoomAndMembershipStatus(
+            User user,
+            Room room,
+            MembershipStatus membershipStatus
+    );
+
     Optional<Membership> findByUserAndRoomAndMembershipStatus(
             User user,
             Room room,
@@ -31,5 +38,21 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
     long countByRoomAndMembershipStatus(
             Room room,
             MembershipStatus membershipStatus
+    );
+
+    List<Membership> findByRoomAndMembershipStatus(
+            Room room,
+            MembershipStatus status
+    );
+
+    Optional<Membership> findByUser_IdAndRoom_IdAndMembershipStatus(
+            Long userId,
+            Long roomId, MembershipStatus status
+    );
+
+
+    boolean existsByUser_IdAndMembershipStatus(
+            Long userId,
+            MembershipStatus status
     );
 }

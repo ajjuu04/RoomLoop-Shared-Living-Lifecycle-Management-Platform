@@ -3,17 +3,20 @@ package com.project.roomloop.helperMethod;
 import com.project.roomloop.entity.Room;
 import com.project.roomloop.entity.User;
 import com.project.roomloop.entity.types.MembershipStatus;
+import com.project.roomloop.error.ResourceNotFoundException;
 import com.project.roomloop.repository.MembershipRepository;
 import com.project.roomloop.repository.RoomRepository;
 import com.project.roomloop.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class HelperForRoomListing {
 
     private final RoomRepository roomRepository;
@@ -52,8 +55,9 @@ public class HelperForRoomListing {
     }
 
     public User checkUser(Long userId){
+        log.info("Entering to the checkUser");
         return userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with this id"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this id"));
     }
 }
 

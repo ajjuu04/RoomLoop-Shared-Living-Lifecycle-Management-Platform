@@ -35,6 +35,7 @@ public class GlobalExceptionHandler {
         ApiError apiError = new ApiError("You dont have Acessd to This API : Insufficenit Permissions  : "+ ex.getMessage(), HttpStatus.FORBIDDEN);
         return new ResponseEntity<>(apiError, apiError.getStatusCode());
     }
+ 
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ApiError> handlerJwtException(JwtException ex){
@@ -65,6 +66,14 @@ public class GlobalExceptionHandler {
         ApiError apiError = new ApiError("is Active Connection in User and Room : "+ex.getMessage(), HttpStatus.CONFLICT);
         return new ResponseEntity<>(apiError,apiError.getStatusCode());
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiError> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        ApiError apiError = new ApiError("Not Found this Entity " + ex.getMessage(),HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(apiError, apiError.getStatusCode());
+    }
+
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex){

@@ -6,6 +6,7 @@ import com.project.roomloop.security.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +19,8 @@ public class ProfileController {
 
     private final AuthService authService;
 
-    @GetMapping("/me/{userId}")
-    public ResponseEntity<UserProfileDto> getMyProfile(@PathVariable Long userId){
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileDto> getMyProfile(@AuthenticationPrincipal Long userId){
         return ResponseEntity.ok(authService.getMyProfile(userId));
     }
 }

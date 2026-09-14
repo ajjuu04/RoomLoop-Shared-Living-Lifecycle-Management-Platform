@@ -1,0 +1,12 @@
+package com.project.roomloop.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class JoinRequestsDto {
+    private Long membershipId;
+    private Long userId;
+    private String name;
+}

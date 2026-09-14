@@ -5,8 +5,9 @@ import com.project.roomloop.entity.Room;
 import com.project.roomloop.entity.User;
 import com.project.roomloop.entity.types.MembershipStatus;
 import com.project.roomloop.repository.MembershipRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
+import com.project.roomloop.error.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,5 +37,15 @@ public class RoomAccessGuide {
         }
         return true;
     }
+
+    public Membership requireAdmin(User currentAdmin, Room room) {
+        Membership membership = isUserActiveMemberOfRoom(currentAdmin,room);
+        if (!Boolean.TRUE.equals(membership.getIsAdmin())){
+            throw new AccessDeniedException("Member in not admin, Only admin can do this action");
+        }
+
+        return membership;
+    }
+
 
 }

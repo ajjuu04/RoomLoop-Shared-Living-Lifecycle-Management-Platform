@@ -27,6 +27,7 @@ public class ListingController {
     private final ListingService listingService;
     private final InterestedService interestedService;
 
+
     @PostMapping("/list/{roomId}")
     public ResponseEntity<ListingDetailsDto> ListNewListing(@RequestBody RegisterNewListingRequest registerNewListingRequest, @PathVariable Long roomId, @AuthenticationPrincipal Long userId){
         return ResponseEntity.status(HttpStatus.CREATED).body(listingService.ListNewListing(registerNewListingRequest,roomId,userId));
@@ -79,4 +80,6 @@ public class ListingController {
         interestedService.markUserNotInterestedInRoom(userId, listingId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
+
 }

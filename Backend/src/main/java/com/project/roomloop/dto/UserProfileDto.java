@@ -11,5 +11,5 @@ public class UserProfileDto {
     private String name;
     private String email;
     private String role;
-    private long roomId;
+    private Long roomId;
 }
