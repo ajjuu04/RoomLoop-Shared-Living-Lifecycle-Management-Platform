@@ -1,9 +1,6 @@
 package com.project.roomloop.service;
 
-import com.project.roomloop.dto.RegisterNewRoomRequest;
-import com.project.roomloop.dto.RoomDetailsDto;
-import com.project.roomloop.dto.RoomOccupancyUpdateDto;
-import com.project.roomloop.dto.RoomUpdateDto;
+import com.project.roomloop.dto.*;
 import com.project.roomloop.entity.Membership;
 import com.project.roomloop.entity.Room;
 import com.project.roomloop.entity.User;
@@ -20,6 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+
+import static org.apache.el.lang.ELArithmetic.divide;
 
 @Slf4j
 @Service
@@ -201,5 +202,16 @@ public class RoomService {
                 .totalOccupancy(newTotalOccupancy)
                 .cretedByUser(room.getCretedBy().getId())
                 .build();
+    }
+
+
+    public BillsGenerateResponse generateMonthlyBill(Long memberId, Long roomId) {
+        User user = helperForRoomListing.checkUser(memberId);
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("There is no Room found with hthis id"));
+
+        roomAccessGuide.isUserActiveMemberOfRoom(user,room);
+        Long currentActiveMembers = membershipRepository.countByRoomAndMembershipStatus(room,MembershipStatus.ACTIVE);
+
+        return new BillsGenerateResponse((BigDecimal) divide(room.getRent(),currentActiveMembers));
     }
 }

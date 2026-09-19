@@ -1,10 +1,7 @@
 package com.project.roomloop.controller;
 
 
-import com.project.roomloop.dto.RegisterNewRoomRequest;
-import com.project.roomloop.dto.RoomDetailsDto;
-import com.project.roomloop.dto.RoomOccupancyUpdateDto;
-import com.project.roomloop.dto.RoomUpdateDto;
+import com.project.roomloop.dto.*;
 import com.project.roomloop.entity.User;
 import com.project.roomloop.repository.RoomRepository;
 import com.project.roomloop.service.RoomService;
@@ -51,4 +48,14 @@ public class RoomController {
                                             @AuthenticationPrincipal Long userId){
         return roomService.editRoomOccupancy(roomId,roomOccupancyUpdateDto,userId);
     }
+
+
+    // billing ApI
+
+    @PostMapping("/bills/generate/{roomId}")
+    public ResponseEntity<BillsGenerateResponse> generateMonthlyBill(@AuthenticationPrincipal Long memberId, Long roomId){
+        return ResponseEntity.ok(roomService.generateMonthlyBill(memberId,roomId));
+    }
+
+
 }
