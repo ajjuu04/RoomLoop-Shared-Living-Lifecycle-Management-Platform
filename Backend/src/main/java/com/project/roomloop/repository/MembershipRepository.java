@@ -55,4 +55,10 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
             Long userId,
             MembershipStatus status
     );
+
+    Optional<Membership> findByRoom_IdAndIsAdminAndMembershipStatus(
+            Long roomId,
+            boolean isAdmin,
+            MembershipStatus status
+    );
 }

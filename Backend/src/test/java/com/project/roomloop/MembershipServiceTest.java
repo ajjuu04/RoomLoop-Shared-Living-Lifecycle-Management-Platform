@@ -581,6 +581,7 @@ public class MembershipServiceTest {
 
             Room room = Room.builder()
                     .id(10L)
+                    .totalOccupancy(4)
                     .build();
 
             Membership membership = Membership.builder()
@@ -601,7 +602,15 @@ public class MembershipServiceTest {
                     .existsByUser_IdAndMembershipStatus(
                             requester.getId(),
                             MembershipStatus.ACTIVE
-                    )).thenReturn(false);
+                    ))
+                    .thenReturn(false);
+
+            when(membershipRepository
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(2L);
 
             membershipService.approveJoinRequest(
                     membershipId,
@@ -615,6 +624,12 @@ public class MembershipServiceTest {
 
             verify(roomAccessGuard)
                     .isUserAdmin(admin, room);
+
+            verify(membershipRepository)
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    );
 
             verify(membershipRepository)
                     .save(membership);
@@ -645,7 +660,23 @@ public class MembershipServiceTest {
                     )
             );
 
-            verify(membershipRepository).findById(membershipId);
+            verify(membershipRepository)
+                    .findById(membershipId);
+
+            verify(roomAccessGuard, never())
+                    .isUserAdmin(any(User.class), any(Room.class));
+
+            verify(membershipRepository, never())
+                    .existsByUser_IdAndMembershipStatus(
+                            anyLong(),
+                            any(MembershipStatus.class)
+                    );
+
+            verify(membershipRepository, never())
+                    .countByRoomAndMembershipStatus(
+                            any(Room.class),
+                            any(MembershipStatus.class)
+                    );
 
             verify(membershipRepository, never())
                     .save(any(Membership.class));
@@ -662,12 +693,13 @@ public class MembershipServiceTest {
                     .id(adminUserId)
                     .build();
 
-            Room room = Room.builder()
-                    .id(10L)
-                    .build();
-
             User requester = User.builder()
                     .id(2L)
+                    .build();
+
+            Room room = Room.builder()
+                    .id(10L)
+                    .totalOccupancy(4)
                     .build();
 
             Membership membership = Membership.builder()
@@ -695,6 +727,18 @@ public class MembershipServiceTest {
                     .isUserAdmin(any(User.class), any(Room.class));
 
             verify(membershipRepository, never())
+                    .existsByUser_IdAndMembershipStatus(
+                            anyLong(),
+                            any(MembershipStatus.class)
+                    );
+
+            verify(membershipRepository, never())
+                    .countByRoomAndMembershipStatus(
+                            any(Room.class),
+                            any(MembershipStatus.class)
+                    );
+
+            verify(membershipRepository, never())
                     .save(any(Membership.class));
         }
 
@@ -715,6 +759,7 @@ public class MembershipServiceTest {
 
             Room room = Room.builder()
                     .id(10L)
+                    .totalOccupancy(4)
                     .build();
 
             Membership membership = Membership.builder()
@@ -734,7 +779,8 @@ public class MembershipServiceTest {
                     .existsByUser_IdAndMembershipStatus(
                             requester.getId(),
                             MembershipStatus.ACTIVE
-                    )).thenReturn(true);
+                    ))
+                    .thenReturn(true);
 
             assertThrows(
                     IllegalStateException.class,
@@ -747,12 +793,261 @@ public class MembershipServiceTest {
             verify(roomAccessGuard)
                     .isUserAdmin(admin, room);
 
+            verify(membershipRepository)
+                    .existsByUser_IdAndMembershipStatus(
+                            requester.getId(),
+                            MembershipStatus.ACTIVE
+                    );
+
+            // Capacity check should NOT happen
+            verify(membershipRepository, never())
+                    .countByRoomAndMembershipStatus(
+                            any(Room.class),
+                            any(MembershipStatus.class)
+                    );
+
+            verify(membershipRepository, never())
+                    .save(any(Membership.class));
+        }
+
+
+        @Test
+        void roomIsAtFullCapacity() {
+
+            Long membershipId = 100L;
+            Long adminUserId = 1L;
+
+            User admin = User.builder()
+                    .id(adminUserId)
+                    .name("Admin")
+                    .build();
+
+            User requester = User.builder()
+                    .id(2L)
+                    .name("Requester")
+                    .build();
+
+            Room room = Room.builder()
+                    .id(10L)
+                    .totalOccupancy(4)
+                    .build();
+
+            Membership membership = Membership.builder()
+                    .id(membershipId)
+                    .user(requester)
+                    .room(room)
+                    .membershipStatus(MembershipStatus.PENDING)
+                    .isAdmin(false)
+                    .build();
+
+            when(userRepository.findById(adminUserId))
+                    .thenReturn(Optional.of(admin));
+
+            when(membershipRepository.findById(membershipId))
+                    .thenReturn(Optional.of(membership));
+
+            when(membershipRepository
+                    .existsByUser_IdAndMembershipStatus(
+                            requester.getId(),
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(false);
+
+            // Room capacity = 4
+            // Current active members = 4
+            when(membershipRepository
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(4L);
+
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> membershipService.approveJoinRequest(
+                            membershipId,
+                            adminUserId
+                    )
+            );
+
+            verify(roomAccessGuard)
+                    .isUserAdmin(admin, room);
+
+            verify(membershipRepository)
+                    .existsByUser_IdAndMembershipStatus(
+                            requester.getId(),
+                            MembershipStatus.ACTIVE
+                    );
+
+            verify(membershipRepository)
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    );
+
+            // Membership must remain PENDING
+            assertEquals(
+                    MembershipStatus.PENDING,
+                    membership.getMembershipStatus()
+            );
+
+            // Save must NOT happen
+            verify(membershipRepository, never())
+                    .save(any(Membership.class));
+        }
+
+
+        @Test
+        void roomHasAvailableCapacity() {
+
+            Long membershipId = 100L;
+            Long adminUserId = 1L;
+
+            User admin = User.builder()
+                    .id(adminUserId)
+                    .build();
+
+            User requester = User.builder()
+                    .id(2L)
+                    .build();
+
+            Room room = Room.builder()
+                    .id(10L)
+                    .totalOccupancy(4)
+                    .build();
+
+            Membership membership = Membership.builder()
+                    .id(membershipId)
+                    .user(requester)
+                    .room(room)
+                    .membershipStatus(MembershipStatus.PENDING)
+                    .build();
+
+            when(userRepository.findById(adminUserId))
+                    .thenReturn(Optional.of(admin));
+
+            when(membershipRepository.findById(membershipId))
+                    .thenReturn(Optional.of(membership));
+
+            when(membershipRepository
+                    .existsByUser_IdAndMembershipStatus(
+                            requester.getId(),
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(false);
+
+            // Capacity = 4
+            // Current active members = 3
+            when(membershipRepository
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(3L);
+
+            membershipService.approveJoinRequest(
+                    membershipId,
+                    adminUserId
+            );
+
+            assertEquals(
+                    MembershipStatus.ACTIVE,
+                    membership.getMembershipStatus()
+            );
+
+            verify(roomAccessGuard)
+                    .isUserAdmin(admin, room);
+
+            verify(membershipRepository)
+                    .existsByUser_IdAndMembershipStatus(
+                            requester.getId(),
+                            MembershipStatus.ACTIVE
+                    );
+
+            verify(membershipRepository)
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    );
+
+            verify(membershipRepository)
+                    .save(membership);
+        }
+
+
+        @Test
+        void roomCapacityExceeded() {
+
+            Long membershipId = 100L;
+            Long adminUserId = 1L;
+
+            User admin = User.builder()
+                    .id(adminUserId)
+                    .build();
+
+            User requester = User.builder()
+                    .id(2L)
+                    .build();
+
+            Room room = Room.builder()
+                    .id(10L)
+                    .totalOccupancy(4)
+                    .build();
+
+            Membership membership = Membership.builder()
+                    .id(membershipId)
+                    .user(requester)
+                    .room(room)
+                    .membershipStatus(MembershipStatus.PENDING)
+                    .build();
+
+            when(userRepository.findById(adminUserId))
+                    .thenReturn(Optional.of(admin));
+
+            when(membershipRepository.findById(membershipId))
+                    .thenReturn(Optional.of(membership));
+
+            when(membershipRepository
+                    .existsByUser_IdAndMembershipStatus(
+                            requester.getId(),
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(false);
+
+            // Current members > capacity
+            when(membershipRepository
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    ))
+                    .thenReturn(5L);
+
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> membershipService.approveJoinRequest(
+                            membershipId,
+                            adminUserId
+                    )
+            );
+
+            assertEquals(
+                    MembershipStatus.PENDING,
+                    membership.getMembershipStatus()
+            );
+
+            verify(roomAccessGuard)
+                    .isUserAdmin(admin, room);
+
+            verify(membershipRepository)
+                    .countByRoomAndMembershipStatus(
+                            room,
+                            MembershipStatus.ACTIVE
+                    );
+
             verify(membershipRepository, never())
                     .save(any(Membership.class));
         }
     }
-
-
     // =========================================================
     // rejectJoinRequest()
     // =========================================================

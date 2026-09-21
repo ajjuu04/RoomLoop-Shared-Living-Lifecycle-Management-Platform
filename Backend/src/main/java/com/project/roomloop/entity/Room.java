@@ -19,6 +19,9 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+//    @Size(max = 20,message = "Address should be in proper manner MAx 20 characters")
+//    private String name;
+
     @Size(min = 8, max = 360,message = "Address should be in proper manner between 8 to 360 characters")
     @NotNull(message = "Address cant be null")
     private String address;

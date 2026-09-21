@@ -22,6 +22,8 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
     Optional<Listing> findByPostedBy(
             User postedBy
     );
+    
+    
 
 
     Page<Listing> findByListingStatus(
@@ -29,4 +31,5 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
             Pageable pageable);
 
 
+    void deleteByPostedByAndListingStatus(User user, ListingStatus listingStatus);
 }

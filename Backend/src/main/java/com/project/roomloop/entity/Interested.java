@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
         uniqueConstraints = {
              @UniqueConstraint(
                      name = "unique_user_listing",
-                     columnNames = {"user_id","listing"}
+                     columnNames = {"user_id","listing_id"}
              )
         }
 )
@@ -32,7 +32,7 @@ public class Interested {
     private User user;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "listing_id", nullable = false)
     private Listing listing;
 
     @CurrentTimestamp

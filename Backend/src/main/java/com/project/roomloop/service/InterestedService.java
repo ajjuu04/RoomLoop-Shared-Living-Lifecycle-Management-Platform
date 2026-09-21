@@ -19,6 +19,7 @@ public class InterestedService {
     private final ListingRepository listingRepository;
     private final InterestedRepository interestedRepository;
     private final HelperForRoomListing helperForRoomListing;
+    private final NotificationService notificationService;
 
     @Transactional
     public InterestedResponceDto markUserInterestedInRoom(Long userId, Long listingId) {
@@ -54,6 +55,7 @@ public class InterestedService {
                         .build()
         );
 
+        notificationService.notify(listing.getPostedBy(), user.getName() + " is interested in your listing");
         return new InterestedResponceDto(memberListing.getName(),memberListing.getMobileNumber());
     }
 

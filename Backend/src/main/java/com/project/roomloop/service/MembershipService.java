@@ -26,6 +26,7 @@ public class MembershipService {
     private final RoomAccessGuide roomAccessGuard;
     private final HelperForRoomListing helperForRoomListing;
     private final ListingRepository listingRepository;
+    private final NotificationService notificationService;
 
     // this for the person who want to join with listting
     @Transactional
@@ -83,6 +84,13 @@ public class MembershipService {
                 .membershipStatus(MembershipStatus.PENDING)
                 .isAdmin(false)
                 .build());
+        {
+            Membership adminMembership = membershipRepository.findByRoom_IdAndIsAdminAndMembershipStatus(room.getId(), true, MembershipStatus.ACTIVE)
+                    .orElseThrow(() -> new ResourceNotFoundException("notification error cant send to admin, admin not found"));
+            String msg = user.getName() + " is requested to join your room";
+            notificationService.notify(adminMembership.getUser(),msg);
+        }
+
     }
 
     public RoomMembersDto getRoomMembers(Long roomId, Long userId) {
@@ -135,8 +143,24 @@ public class MembershipService {
             throw new IllegalStateException("This user already has an active room elsewhere");
         }
 
+        long currentActiveMembers = membershipRepository
+                .countByRoomAndMembershipStatus(membership.getRoom(), MembershipStatus.ACTIVE);
+        if (currentActiveMembers >= membership.getRoom().getTotalOccupancy()) {
+            throw new IllegalStateException("Room is at full capacity the Listing posted member must exit before replacement can be approved");
+        }
+
+        List<Membership> currentMembers = membershipRepository.findByRoomAndMembershipStatus(membership.getRoom(),MembershipStatus.ACTIVE);
+
         membership.setMembershipStatus(MembershipStatus.ACTIVE);
         membershipRepository.save(membership);
+        {
+            notificationService.notify(membership.getUser(), "Your request to join was approved!");
+            currentMembers.forEach(member ->{
+                notificationService.notify(member.getUser(), "Welcome " + membership.getUser().getName()
+                        + "! new member has joined to your room.");
+            });
+
+        }
     }
 
     @Transactional
@@ -151,6 +175,7 @@ public class MembershipService {
         roomAccessGuard.isUserAdmin(admin, membership.getRoom());
 
         membershipRepository.delete(membership);
+        notificationService.notify(membership.getUser(), "Your request to join was Rejected by Admin of the Room, Please COntact With Room Admin!");
     }
 
     @Transactional
@@ -159,6 +184,10 @@ public class MembershipService {
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new ResourceNotFoundException("Room not found"));
 
         Membership membership = roomAccessGuard.isUserActiveMemberOfRoom(user, room);
+        boolean isAnyActiveListingByUser = listingRepository.existsByRoomAndPostedByAndListingStatus(room,user,ListingStatus.OPEN);
+        if (isAnyActiveListingByUser){
+            listingRepository.deleteByPostedByAndListingStatus(user,ListingStatus.OPEN);
+        }
 
         if (membership.getIsAdmin()) {
             throw new IllegalStateException("you are the room admin first mk eanother member admin before leaving");
@@ -185,6 +214,7 @@ public class MembershipService {
 
         RemovedMember.setMembershipStatus(MembershipStatus.LEFT);
         membershipRepository.save(RemovedMember);
+        notificationService.notify(RemovedMember.getUser(), "Your Kick Out from room by Admin!");
     }
 
     @Transactional

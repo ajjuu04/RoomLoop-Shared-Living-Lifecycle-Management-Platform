@@ -2,12 +2,9 @@ package com.project.roomloop.controller;
 
 
 import com.project.roomloop.dto.*;
-import com.project.roomloop.entity.User;
-import com.project.roomloop.repository.RoomRepository;
 import com.project.roomloop.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,10 +27,10 @@ public class RoomController {
     }
 
     // no need extra
-    @GetMapping("/me/{roomId}")
-    public ResponseEntity<RoomDetailsDto> getRoomDetailsById(@PathVariable Long roomId){
-        return ResponseEntity.ok(roomService.getRoomDetailsById(roomId));
-    }
+//    @GetMapping("/me/{roomId}")
+//    public ResponseEntity<RoomDetailsDto> getRoomDetailsById(@PathVariable Long roomId){
+//        return ResponseEntity.ok(roomService.getRoomDetailsById(roomId));
+//    }
 
     @PatchMapping("/edit/{roomId}")
     public RoomDetailsDto editRoom(@PathVariable Long roomId,
@@ -50,12 +47,6 @@ public class RoomController {
     }
 
 
-    // billing ApI
-
-    @PostMapping("/bills/generate/{roomId}")
-    public ResponseEntity<BillsGenerateResponse> generateMonthlyBill(@AuthenticationPrincipal Long memberId, Long roomId){
-        return ResponseEntity.ok(roomService.generateMonthlyBill(memberId,roomId));
-    }
 
 
 }

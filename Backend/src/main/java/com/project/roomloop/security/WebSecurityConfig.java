@@ -28,6 +28,8 @@ public class WebSecurityConfig {
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/listing/**").authenticated()
                         .requestMatchers("/membership/**").authenticated()
+                        .requestMatchers("/rooms/**").authenticated()
+                        .requestMatchers("/notifications/**").authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 //                .formLogin(Customizer.withDefaults());
