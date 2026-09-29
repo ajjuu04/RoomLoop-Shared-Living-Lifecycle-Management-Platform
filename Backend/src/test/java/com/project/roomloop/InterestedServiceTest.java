@@ -1,14 +1,15 @@
 package com.project.roomloop;
 
 import com.project.roomloop.dto.InterestedResponceDto;
-import com.project.roomloop.entity.Interested;
-import com.project.roomloop.entity.Listing;
-import com.project.roomloop.entity.User;
+import com.project.roomloop.entity.*;
 import com.project.roomloop.entity.types.ListingStatus;
+import com.project.roomloop.entity.types.MembershipStatus;
 import com.project.roomloop.helperMethod.HelperForRoomListing;
 import com.project.roomloop.repository.InterestedRepository;
 import com.project.roomloop.repository.ListingRepository;
+import com.project.roomloop.repository.MembershipRepository;
 import com.project.roomloop.service.InterestedService;
+import com.project.roomloop.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,11 +35,15 @@ public class InterestedServiceTest {
     @Mock
     private HelperForRoomListing helperForRoomListing;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private InterestedService interestedService;
 
 
-    //happy path
+
+// happy path
     @Test
     public void markUserInterestedInRoom() {
 
@@ -83,7 +88,7 @@ public class InterestedServiceTest {
     }
 
 
-    // listing not open
+            // listing not open
     @Test
     public void markUserInterestedInRoom_ShouldThrowException_WhenListingNotFound() {
 

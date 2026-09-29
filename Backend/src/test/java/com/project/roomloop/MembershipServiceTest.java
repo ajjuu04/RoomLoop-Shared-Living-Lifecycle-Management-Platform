@@ -14,6 +14,7 @@ import com.project.roomloop.repository.MembershipRepository;
 import com.project.roomloop.repository.RoomRepository;
 import com.project.roomloop.repository.UserRepository;
 import com.project.roomloop.service.MembershipService;
+import com.project.roomloop.service.NotificationService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,9 @@ public class MembershipServiceTest {
     @Mock
     private ListingRepository listingRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
 
     // =========================================================
     // createJoinRequest()
@@ -81,6 +85,19 @@ public class MembershipServiceTest {
                     .room(room)
                     .build();
 
+            Membership adminMembership = Membership.builder()
+                    .user(User.builder().id(2L).name("Admin").build())
+                    .room(room)
+                    .membershipStatus(MembershipStatus.ACTIVE)
+                    .isAdmin(true)
+                    .build();
+
+            when(membershipRepository.findByRoom_IdAndIsAdminAndMembershipStatus(
+                    room.getId(),
+                    true,
+                    MembershipStatus.ACTIVE
+            )).thenReturn(Optional.of(adminMembership));
+
             when(helperForRoomListing.checkUser(userId))
                     .thenReturn(user);
 
@@ -92,6 +109,10 @@ public class MembershipServiceTest {
             verify(helperForRoomListing).checkUser(userId);
             verify(listingRepository).findById(listingId);
             verify(membershipRepository).save(any(Membership.class));
+            verify(notificationService).notify(
+                    adminMembership.getUser(),
+                    user.getName() + " is requested to join your room"
+            );
         }
 
 
@@ -187,6 +208,23 @@ public class MembershipServiceTest {
                     .id(roomId)
                     .totalOccupancy(4)
                     .build();
+
+            Membership adminMembership = Membership.builder()
+                    .user(User.builder()
+                            .id(2L)
+                            .name("Admin")
+                            .build())
+                    .room(room)
+                    .membershipStatus(MembershipStatus.ACTIVE)
+                    .isAdmin(true)
+                    .build();
+
+            when(membershipRepository.findByRoom_IdAndIsAdminAndMembershipStatus(
+                    roomId,
+                    true,
+                    MembershipStatus.ACTIVE
+            )).thenReturn(Optional.of(adminMembership));
+
 
             when(helperForRoomListing.checkUser(userId))
                     .thenReturn(user);
